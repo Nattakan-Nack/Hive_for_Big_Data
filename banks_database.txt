@@ -1,0 +1,112 @@
+-- download files from website --
+wget https://datacubeth.ai/wp-content/uploads/2024/05/accounts.csv
+wget https://datacubeth.ai/wp-content/uploads/2024/06/banks.csv
+wget https://datacubeth.ai/wp-content/uploads/2024/05/customers.csv
+wget https://datacubeth.ai/wp-content/uploads/2024/05/loan_accounts.csv
+wget https://datacubeth.ai/wp-content/uploads/2024/05/loan_transactions.csv
+
+
+hadoop fs -mkdir /user/dataproc/
+hadoop fs -put *.csv /user/dataproc/
+
+-- run these commands on HIVE --
+
+USE default;
+
+CREATE TABLE IF NOT EXISTS accounts
+        (Account_Number VARCHAR(8),
+         Customer_ID VARCHAR(8),
+         Bank_ID VARCHAR(8),
+         Branch_ID VARCHAR(8),
+         Account_Type VARCHAR(16),
+         Currency VARCHAR(8),
+         Balance DOUBLE,
+         Date_Opened DATE
+         )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/dataproc/accounts.csv'
+OVERWRITE INTO TABLE accounts;
+
+CREATE TABLE IF NOT EXISTS banks
+        (
+         Bank_ID VARCHAR(8),
+         Bank_Name VARCHAR(8),
+         Location VARCHAR(32),
+         Branch_ID VARCHAR(8),
+         Telephone VARCHAR(16),
+         Telephone_Backup VARCHAR(16)
+         )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+TBLPROPERTIES ('serialization.null.format' = ''); 
+
+LOAD DATA INPATH '/user/dataproc/banks.csv'
+OVERWRITE INTO TABLE banks;
+
+CREATE TABLE IF NOT EXISTS customers
+        (
+         Customer_ID VARCHAR(8),
+         First_Name VARCHAR(32),
+         Last_Name VARCHAR(32),
+         Email VARCHAR(32),
+         Phone VARCHAR(16),
+         Address VARCHAR(128),
+         Date_of_Birth DATE
+         )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/dataproc/customers.csv'
+OVERWRITE INTO TABLE customers;
+
+CREATE TABLE IF NOT EXISTS loan_accounts
+        (
+         Loan_ID VARCHAR(8),
+         Customer_ID VARCHAR(8),
+         Bank_ID VARCHAR(8),
+         Branch_ID VARCHAR(8),
+         Loan_Type VARCHAR(32),
+         Loan_Amount DOUBLE,
+         Interest_Rate DOUBLE,
+         Start_Date DATE,
+         End_Date DATE,
+         Monthly_Payment DOUBLE
+         )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/dataproc/loan_accounts.csv'
+OVERWRITE INTO TABLE loan_accounts;
+
+
+CREATE TABLE IF NOT EXISTS loan_transactions
+        (
+         Transaction_ID VARCHAR(8),
+         Loan_ID VARCHAR(8),
+         Amount_Paid DOUBLE,
+         Payment_Date DATE,
+         Due_Date DATE
+         )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/dataproc/loan_transactions.csv'
+OVERWRITE INTO TABLE loan_transactions;
+
+-- setup zeppelin notebook --
+1. Set interpreter : jdbc
+2. Set hive.url as
+       
+       jdbc:hive2://localhost:10000
+
+3. Remove username and password (keep them empty)
+4. Set hive.driver property as:
+        
+        org.apache.hive.jdbc.HiveDriver
+
+5. Adding two artifact under dependencies tab:
+        
+        org.apache.hive:hive-jdbc:0.14.0
+        org.apache.hadoop:hadoop-common:3.3.6
